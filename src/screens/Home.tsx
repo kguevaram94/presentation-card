@@ -1,101 +1,53 @@
-import React, { FunctionComponent } from 'react';
-import { Button, FlatList, Image, PixelRatio, StyleSheet, View } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome5';
-import { Colors } from '../class/Colors';
-import { FontApp } from '../class/FontApp';
-import Row from '../components/Row/Row';
+import axios from 'axios';
+import React, { FunctionComponent, useContext, useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import ScreenContainer from '../components/ScreenContainer/ScreenContainer';
-import Spacer from '../components/Spacer/Spacer';
-import TextApp from '../components/TextApp/TextApp';
-import Contacts, { Contact } from 'react-native-contacts';
-import { contactInfo } from '../util/contactInfo';
+import GlobalContext from '../context/GlobalContext';
+import { UserContact } from '../types/users';
 
 type Props = {
-
+    navigation: any
 };
 
-const HomeScreen: FunctionComponent<Props> = ({ }) => {
+const HomeScreen: FunctionComponent<Props> = ({ navigation }) => {
 
+    const { userInfo } = useContext(GlobalContext);
+    const [users, setUsers] = useState<UserContact[]>([]);
 
-    const onPressSaveContact = () => {
-        const contact: Partial<Contact> = {
-            emailAddresses: [{
-                label: "work",
-                email: contactInfo.mail,
-            }],
-            displayName: contactInfo.name,
-            company: contactInfo.company,
-            jobTitle: contactInfo.job,
-            phoneNumbers: [{ label: "WhatsApp", number: contactInfo.phoneNumber }],
-        };
+    useEffect(() => {
+        axios.get('https://mycontt.com/wp-json/wp/v2/users?mo_rest_api_test_config=jwt_auth',
+            {
+                headers: {
+                    'Authorization': `Bearer ${userInfo?.jwt_token}`
+                }
+            })
+            .then(res => {
+                if (res.status == 200) {
+                    setUsers(res.data);
+                }
+            })
+            .catch(err => { console.log(err); })
+    }, []);
 
-        Contacts.openContactForm(contact)
-
+    const onPress = (user: UserContact) => {
+        navigation.navigate('ContactDetails', { user });
     }
 
     return (
         <ScreenContainer >
-            <FlatList
-                style={{ width: '100%' }}
-                keyExtractor={(item, index) => item.id + "homeListItem"}
-                renderItem={({ item, index }) => item.item}
-                data={[
-                    {
-                        id: 1,
-                        item: <View style={{ alignItems: 'center', padding: 15 }}>
-                            <Spacer size={50} />
 
-                            <Row style={{ alignItems: 'center' }}>
-                                <Icon name={'building'} color={Colors.dodgerblue()} size={30} />
-                                <TextApp style={styles.text}>{contactInfo.company}</TextApp>
-                            </Row>
-                            <Spacer size={50} />
-
-                            <TextApp style={{ textAlign: 'center', fontSize: 18, color: Colors.black(), ...FontApp.bold }}>{contactInfo.job}</TextApp>
-                            <Spacer size={50} />
-
-                            <View style={{ width: 100, height: 100, borderRadius: 50, overflow: 'hidden' }}>
-                                <Image source={{ uri: contactInfo.avatarUrl }} style={{ width: 100, height: 100 }} />
-                            </View>
-                            <Spacer size={100} />
-
-                            <Row style={{ alignItems: 'center', alignSelf: 'flex-start' }}>
-                                <Icon name={'linkedin'} color={Colors.dodgerblue()} size={30} />
-                                <TextApp style={styles.text}>{contactInfo.linkedInUser}</TextApp>
-                            </Row>
-                            <Spacer />
-
-                            <Row style={{ alignItems: 'center', alignSelf: 'flex-start' }}>
-                                <Icon name={'whatsapp'} color={Colors.dodgerblue()} size={30} />
-                                <TextApp style={styles.text}>{contactInfo.phoneNumber}</TextApp>
-                            </Row>
-                            <Spacer />
-
-                            <Row style={{ alignItems: 'center', alignSelf: 'flex-start' }}>
-                                <Icon name={'telegram'} color={Colors.dodgerblue()} size={30} />
-                                <TextApp style={styles.text}>{contactInfo.telegramUser}</TextApp>
-                            </Row>
-                            <Spacer />
-
-                            <Row style={{ alignItems: 'center', alignSelf: 'flex-start' }}>
-                                <Icon name={'mail-bulk'} color={Colors.dodgerblue()} size={30} />
-                                <TextApp style={styles.text}>{contactInfo.mail}</TextApp>
-                            </Row>
-                            <Spacer />
-
-                            <Row style={{ alignItems: 'center', alignSelf: 'flex-start' }}>
-                                <Icon name={'link'} color={Colors.dodgerblue()} size={30} />
-                                <TextApp style={styles.text}>{contactInfo.webUrl}</TextApp>
-                            </Row>
-                            <Spacer />
-
-                            <Button title={'Descargar contacto'} color={Colors.dodgerblue()} onPress={onPressSaveContact} />
-                            <Spacer />
-                        </View>
-                    }
-                ]}
-            />
-
+            <ScrollView>
+                {users.map((item, index) => {
+                    return <TouchableOpacity onPress={() => onPress(item)} key={index} style={{
+                        borderWidth: 1,
+                        height: 40,
+                        justifyContent: 'center',
+                        marginVertical: 10
+                    }}>
+                        <Text style={styles.text}>{item.name}</Text>
+                    </TouchableOpacity>
+                })}
+            </ScrollView>
 
         </ScreenContainer >
     );
